@@ -279,7 +279,7 @@ OK
 
 配置ＰＨＰ支持连接redis服务器
 
-
+两台web服务器做相同配置
 [root@web44 ~]# tar -xf redis-cluster-4.3.0.tgz
 [root@web44 ~]# cd redis-4.3.0/
 [root@web44 redis-4.3.0]# phpize
@@ -295,6 +295,9 @@ curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sq
 [root@web44 redis-4.3.0]# systemctl restart php-fpm
 [root@web44 redis-4.3.0]# php -m | grep -i redis
 redis
+
+
+
 
 
 
