@@ -671,13 +671,7 @@ vrrp_instance VI_1 {
 
 在web33上进行轮询检测
 
-把mysql主从同步结构的数据迁移到pex 集群上
-１．停止22从服务器的slave进程　stop slave;
-2.使用indbbackupex 对22做数据完全备份
-3.把完全备份的文件拷贝到pxc主机做数据恢复
-４．启动mysql数据库服务
-５．查看slave进程的状态
-６．查看数据
+
 [root@web33 html]# mysql -h192.168.4.82 -uyaya -p123456 -e "select @@hostname"
 +------------+
 | @@hostname |
@@ -697,7 +691,13 @@ vrrp_instance VI_1 {
 | pxcnode72  |
 +------------+
 
-
+把mysql主从同步结构的数据迁移到pex 集群上
+１．停止22从服务器的slave进程　stop slave;
+2.使用indbbackupex 对22做数据完全备份
+3.把完全备份的文件拷贝到pxc主机做数据恢复
+４．启动mysql数据库服务
+５．查看slave进程的状态
+６．查看数据
 
 
 
