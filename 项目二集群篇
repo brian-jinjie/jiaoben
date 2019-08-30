@@ -102,7 +102,7 @@ rpm -q php-fpm
         LB  192.168.4.81-82
         
 概况：        
-配置redis集群(使用redis脚本一配置多台redis服务器环境)
+配置redis集群(使用redis脚本一,配置多台redis服务器环境)
 配置redis管理（）
 启动redis集群
 测试redis集群
@@ -110,13 +110,19 @@ rpm -q php-fpm
 配置ＰＨＰ支持连接redis服务器
 编写php脚本连接集群存取数据
 客户端访问网站脚本存取数据
+配置pex集群
+配置LB集群
+配置haproxy调度器集群（keepalived）
 
 
 
 详细步骤：
+步骤一：　
 
 配置redis集群(使用脚本一配置多台redis服务器环境)
-配置redis管理（）
+
+步骤二：
+配置redis管理
 1）部署ruby脚本运行环境
 [root@mgm57 ~]#yum  -y  install   rubygems 
 [root@mgm57 ~]# which gem
@@ -138,7 +144,7 @@ Installing ri documentation for redis-3.2.1
 [root@mgm57 ~]#chmod  +x   /root/bin/redis-trib.rb
 [root@mgm57 ~]#redis-trib.rb   help  //查看命令帮助
 
-
+步骤二：
 启动redis集群
 redis-trib.rb create --replicas 1 192.168.4.51:6379 192.168.4.52:6379 192.168.4.53:6379 192.168.4.54:6379 192.168.4.55:6379 192.168.4.56:6379 192.168.4.58:6379
 >>> Creating cluster
@@ -199,14 +205,14 @@ M: 5017bbea03d53bbdb766aa887df44db1bb33cf7b 192.168.4.53:6379
 
 
 在任意一台redis服务器本机，查看集群信息
-[root@redisA ~]# redis-cli  -h 192.168.4.51 -p 6351
-192.168.4.51:6351> cluster info       //查看集群信息
+[root@redisA ~]# redis-cli  -h 192.168.4.51 -p 6379
+192.168.4.51:6379> cluster info       //查看集群信息
 cluster_state:ok
 ……
 ……
 cluster_known_nodes:6
 cluster_size:3
-192.168.4.51:6351> cluster  nodes   //查看集群节点信息
+192.168.4.51:6379> cluster  nodes   //查看集群节点信息
 d9634ba0aa5c1a07193da4a013da6051c1515922 192.168.4.54:6354@16354 slave 9e44139cffb8ebd7ed746aabbf4bcea9bf207645 0 1561357552212 4 connected
 894dd0008053f6fb65e9e4a36b755d9351607500 192.168.4.56:6356@16356 slave 324e05df3f143ef97e50d09be0328a695e655986 0 1561357554216 6 connected
 d9f8fe6d6d9dd391be8e7904501db1535e4d17cb 192.168.4.51:6351@16351 myself,master - 0 1561357545000 1 connected 0-5460
@@ -215,6 +221,7 @@ d9f8fe6d6d9dd391be8e7904501db1535e4d17cb 192.168.4.51:6351@16351 myself,master -
 2d343a9df48f6f6e207949e980ef498466a44dad 192.168.4.55:6355@16355 slave d9f8fe6d6d9dd391be8e7904501db1535e4d17cb 0 1561357553716 5 connected
 192.168.4.51:6351>
 
+步骤三：
 
 测试集群
 [root@client50 ~]# redis-cli  -c  -h 192.168.4.51 -p 6351 //连接服务器51
@@ -252,40 +259,42 @@ OK
 OK
 192.168.4.51:6351>
 
+步骤四：
 配置LNMP　web网站
- 步骤一：安装部署LNMP软件
+ 安装部署LNMP软件
 ＃未修改nginx的php服务
-备注：mariadb（数据库客户端软件）、mariadb-server（数据库服务器软件）、mariadb-devel（其他客户端软件的依赖包）、php（解释器）、php-fpm（进程管理器服务）、php-mysql（PHP的数据库扩展包）。
+备注：mariadb（数据库客户端软件）、mariadb-server（数据库服务器软件）、mariadb-devel（其他客户端软件的依赖包）
+php（解释器）、php-fpm（进程管理器服务）、php-mysql（PHP的数据库扩展包） php-devel。
 1）安装软件包
-[root@centos7 ~]# yum -y install gcc openssl-devel pcre-devel 
-[root@centos7 ~]# useradd -s /sbin/nologin  nginx
-[root@centos7 ~]# tar -xvf nginx-1.12.2.tar.gz
-[root@centos7 ~]# cd nginx-1.12.2
-[root@centos7 nginx-1.12.2]# ./configure   \
+]# yum -y install gcc openssl-devel pcre-devel 
+]# useradd -s /sbin/nologin  nginx
+]# tar -xvf nginx-1.12.2.tar.gz
+]# cd nginx-1.12.2
+ nginx-1.12.2]# ./configure   \
 --user=nginx   --group=nginx \
 --with-http_ssl_module   \
 --with-http_stub_status_module
-[root@centos7 nginx-1.12.2]# make && make install
-[root@centos7 ~]# yum -y install   mariadb   mariadb-server   mariadb-devel
-[root@centos7 ~]# yum -y install   php        php-mysql        php-fpm
+ nginx-1.12.2]# make && make install
+]# yum -y install   mariadb   mariadb-server   mariadb-devel
+]# yum -y install   php        php-mysql        php-fpm
+]# yum -y install   php-devel
 2)启动服务(nginx、mariadb、php-fpm)
-[root@centos7 ~]# /usr/local/nginx/sbin/nginx                 #启动Nginx服务
-[root@centos7 ~]# echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local
-[root@centos7 ~]# chmod +x /etc/rc.local
-[root@centos7 ~]# ss -utnlp | grep :80                        #查看端口信息
-[root@centos7 ~]# #systemctl start   mariadb                   #启动mariadb服务器
-[root@centos7 ~]# #systemctl enable  mariadb               
-    
-[root@centos7 ~]# systemctl start  php-fpm                   #启动php-fpm服务
-[root@centos7 ~]# systemctl enable php-fpm
+]# /usr/local/nginx/sbin/nginx                 #启动Nginx服务
+]# echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local
+]# chmod +x /etc/rc.local
+]# ss -utnlp | grep :80                        #查看端口信息
+]# #systemctl start   mariadb                   #启动mariadb服务器
+]# #systemctl enable  mariadb                   
+]# systemctl start  php-fpm                   #启动php-fpm服务
+]# systemctl enable php-fpm
 
-
+步骤五：
 配置ＰＨＰ支持连接redis服务器：
-
 两台web服务器做相同配置
-[root@web44 ~]# tar -xf redis-cluster-4.3.0.tgz
+
+[root@web44 ~]# tar -xf redis-cluster-4.3.0.gz
 [root@web44 ~]# cd redis-4.3.0/
-[root@web44 redis-4.3.0]# phpize
+[root@web44 redis-4.3.0]# phpize　　#必要步骤，不做会无法做源码安装
 Configuring for:
 PHP Api Version:         20100412
 Zend Module Api No:      20100525
@@ -300,6 +309,397 @@ curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sq
 　　[root@web44 redis-4.3.0]# systemctl restart php-fpm
 [root@web44 redis-4.3.0]# php -m | grep -i redis
 redis
+
+步骤六：
+配置pxc集群三台数据库（71，72，73）
+三台主机配置都要配置：
+配置服务器192.168.4.71
+]#  vim /etc/hosts
+192.168.4.71     pxcnode71
+192.168.4.72     pxcnode72
+192.168.4.73     pxcnode73 
+:wq
+]#hostname  pxcnode71
+
+配置服务器192.168.4.72
+]#  vim /etc/hosts
+192.168.4.71     pxcnode71
+192.168.4.72     pxcnode72
+192.168.4.73     pxcnode73 
+:wq
+]#hostname  pxcnode72
+配置服务器192.168.4.73
+]#  vim /etc/hosts
+192.168.4.71     pxcnode71
+192.168.4.72     pxcnode72
+192.168.4.73     pxcnode73 
+:wq
+]#hostname  pxcnode73
+
+在任意一台服务器上ping 对方的主机名，ping通为配置成功。
+[root@host71 ~]# ping -c 2  pxcnode71  //成功
+PING pxcnode71 (192.168.4.71) 56(84) bytes of data.
+64 bytes from pxcnode71 (192.168.4.71): icmp_seq=1 ttl=255 time=0.011 ms
+64 bytes from pxcnode71 (192.168.4.71): icmp_seq=2 ttl=255 time=0.020 ms
+--- pxcnode71 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 999ms
+rtt min/avg/max/mdev = 0.011/0.015/0.020/0.006 ms
+[root@host71 ~]# 
+[root@host71 ~]# 
+[root@host71 ~]# ping -c 2  pxcnode72 //成功
+PING pxcnode72 (192.168.4.72) 56(84) bytes of data.
+64 bytes from pxcnode72 (192.168.4.72): icmp_seq=1 ttl=255 time=0.113 ms
+64 bytes from pxcnode72 (192.168.4.72): icmp_seq=2 ttl=255 time=0.170 ms
+--- pxcnode72 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 0.113/0.141/0.170/0.030 ms
+[root@host71 ~]# 
+[root@host71 ~]# 
+[root@host71 ~]# ping -c 2  pxcnode73 //成功
+PING pxcnode73 (192.168.4.73) 56(84) bytes of data.
+64 bytes from pxcnode73 (192.168.4.73): icmp_seq=1 ttl=255 time=0.198 ms
+64 bytes from pxcnode73 (192.168.4.73): icmp_seq=2 ttl=255 time=0.155 ms
+--- pxcnode73 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 0.155/0.176/0.198/0.025 ms
+[root@host71 ~]#
+
+安装软件包　
+1）在192.168.4.71 服务器安装软件包
+软件包之间有依赖注意软件包安装顺序
+]# rpm -ivh libev-4.15-1.el6.rf.x86_64.rpm    //安装依赖
+]# yum  -y  install  percona-xtrabackup-24-2.4.13-1.el7.x86_64.rpm
+ ]# rpm -ivh qpress-1.1-14.11.x86_64.rpm     //安装依赖
+ ]# tar -xvf  Percona-XtraDB-Cluster-5.7.25-31.35-r463-el7-x86_64-bundle.tar
+ ]# yum -y  install  Percona-XtraDB-Cluster-*.rpm
+2）在192.168.4.72 服务器安装软件包
+]# rpm -ivh libev-4.15-1.el6.rf.x86_64.rpm    //安装依赖
+]# yum  -y  install  percona-xtrabackup-24-2.4.13-1.el7.x86_64.rpm
+]# rpm -ivh qpress-1.1-14.11.x86_64.rpm     //安装依赖
+]# tar -xvf  Percona-XtraDB-Cluster-5.7.25-31.35-r463-el7-x86_64-bundle.tar
+]# yum -y  install  Percona-XtraDB-Cluster-*.rpm
+3）在192.168.4.73 服务器安装软件包
+]# rpm -ivh libev-4.15-1.el6.rf.x86_64.rpm    //安装依赖
+]# yum  -y  install  percona-xtrabackup-24-2.4.13-1.el7.x86_64.rpm
+]# rpm -ivh qpress-1.1-14.11.x86_64.rpm     //安装依赖
+]# tar -xvf  Percona-XtraDB-Cluster-5.7.25-31.35-r463-el7-x86_64-bundle.tar
+]# yum -y  install  Percona-XtraDB-Cluster-*.rpm
+
+修改mysqld.cnf文件（只修改server-id即可）
+[root@pxcnode71 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld.cnf
+[mysqld]
+server-id=71                      //server-id 不允许重复
+datadir=/var/lib/mysql                  //数据库目录
+socket=/var/lib/mysql/mysql.sock         //socket文件
+log-error=/var/log/mysqld.log        //日志文件
+pid-file=/var/run/mysqld/mysqld.pid    //pid文件
+log-bin                    //启用binlog日志
+log_slave_updates            //启用链式复制
+expire_logs_days=7            //日志文件保留天数
+:wq
+修改服务器192.168.4.72
+[root@pxcnode72 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld.cnf
+[mysqld]
+server-id=72                      //server-id 不允许重复
+datadir=/var/lib/mysql                  //数据库目录
+socket=/var/lib/mysql/mysql.sock         //socket文件
+log-error=/var/log/mysqld.log        //日志文件
+pid-file=/var/run/mysqld/mysqld.pid    //pid文件
+log-bin                    //启用binlog日志
+log_slave_updates            //启用链式复制
+expire_logs_days=7            //日志文件保留天数
+:wq
+修改服务器192.168.4.73
+[root@pxcnode73 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld.cnf
+[mysqld]
+server-id=73                      //server-id 不允许重复
+datadir=/var/lib/mysql                  //数据库目录
+socket=/var/lib/mysql/mysql.sock         //socket文件
+log-error=/var/log/mysqld.log        //日志文件
+pid-file=/var/run/mysqld/mysqld.pid    //pid文件
+log-bin                    //启用binlog日志
+log_slave_updates            //启用链式复制
+expire_logs_days=7            //日志文件保留天数
+:wq
+
+分别修改3台服务器的mysqld_safe.cnf （使用默认配置即可）
+[root@pxcnode71 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld_safe.cnf
+[mysqld_safe]
+pid-file = /var/run/mysqld/mysqld.pid
+socket   = /var/lib/mysql/mysql.sock
+nice     = 0
+:wq
+．．．．．．．．．．．．．．．．
+
+分别修改3台服务器的wsrep.cnf文件
+
+1）分别修改3台服务器的wsrep.cnf
+[root@pxcnode71 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld_safe.cnf
+wsrep_cluster_address=gcomm://192.168.4.71,192.168.4.72,192.168.4.73//成员列表
+wsrep_node_address=192.168.4.71 //本机ip
+wsrep_cluster_name=pxc-cluster //集群名
+wsrep_node_name=pxcnode71 //本机主机名
+wsrep_sst_auth="sstuser:123qqq...A" //SST数据同步授权用户及密码
+:wq
+修改服务器192.168.4.72
+[root@pxcnode72 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld_safe.cnf
+wsrep_cluster_address=gcomm://192.168.4.71,192.168.4.72,192.168.4.73//成员列表
+wsrep_node_address=192.168.4.72 //本机ip
+wsrep_cluster_name=pxc-cluster //集群名
+wsrep_node_name=pxcnode72 //本机主机名
+wsrep_sst_auth="sstuser:123qqq...A" //SST数据同步授权用户及密码
+:wq
+修改服务器192.168.4.73
+[root@pxcnode73 ~]# vim /etc/percona-xtradb-cluster.conf.d/mysqld_safe.cnf
+wsrep_cluster_address=gcomm://192.168.4.71,192.168.4.72,192.168.4.73//成员列表
+wsrep_node_address=192.168.4.73 //本机ip
+wsrep_cluster_name=pxc-cluster //集群名
+wsrep_node_name=pxcnode73 //本机主机名
+wsrep_sst_auth="sstuser:123qqq...A" //SST数据同步授权用户及密码
+:wq
+
+启动服务
+root@pxcnode71 ~]# ]# systemctl  start mysql@bootstrap.service  //启动集群服务
+[root@pxcnode71 ~]# grep pass /var/log/mysqld.log     //查看数据库管理员初始登录密码
+2019-06-20T12:29:42.489377Z 1 [Note] A temporary password is generated for root@localhost: W.HiOb8(ok)_
+[root@pxcnode71 ~]#mysql –uroot –p’ W.HiOb8(ok)_’ //使用初始密码登录
+Mysql> alter user  root@”localhost” identified by “123456”;//修改登录密码
+MySQL> exit;
+[root@pxcnode71 ~]#mysql –uroot –p123456 //使用修改后的密码登录
+Mysql> garnt reload, lock tables,replication client,process on *.*  to
+sstuser@"localhost” identified by  “123qqq…A”; //添加授权用户
+2）启动数据库服务
+启动主机pxcnode72的数据库服务，会自动同步pxcnode71主机的root初始密码和授权用户sstuser
+[root@pxcnode72 ~]# systemctl  start mysql  //启动数据库服务
+[root@pxcnode72 ~]#
+[root@pxcnode72 ~]# netstat -utnlp  | grep :3306
+tcp6       0      0 :::3306                 :::*                    LISTEN      12794/mysqld        
+[root@pxcnode72 ~]# netstat -utnlp  | grep :4567
+tcp        0      0 0.0.0.0:4567            0.0.0.0:*               LISTEN      12794/mysqld        
+[root@host72 ~]#
+启动主机pxcnode73的数据库服务，会自动同步pxcnode71主机的root初始密码和授权用户sstuser
+[root@pxcnode73 ~]# systemctl  start mysql  //启动数据库服务
+[root@pxcnode73 ~]#
+[root@pxcnode73 ~]# netstat -utnlp  | grep :3306
+tcp6       0      0 :::3306                 :::*                    LISTEN      12794/mysqld        
+[root@pxcnode73 ~]# netstat -utnlp  | grep :4567
+tcp        0      0 0.0.0.0:4567            0.0.0.0:*               LISTEN      12794/mysqld        
+[root@host73 ~]#
+测试配置
+1）启动数据库服务
+在任意一台数据查看都可以。
+[root@pxcnode71 ~]# mysql -uroot -p123456
+wsrep_incoming_addresses 192.168.4.71:3306,192.168.4.72:3306,192.168.4.73:3306 //集群成员列表 
+wsrep_cluster_size       3 //集群服务器台数
+wsrep_cluster_status   Primary     //集群状态                           
+wsrep_connected        ON            //连接状态
+wsrep_ready             ON           //服务状态
+
+添加访问数据的连接用户 （在任意一台服务器上添加都可以，另外的2台服务器会自动同步授权用户）
+1）添加访问数据的连接用户 （在任意一台服务器上添加都可以，另外的2台服务器会自动同步授权用户）
+[root@pxcnode72 ~]# mysql  -uroot  -p123456
+mysql> grant all on  gamedb.*  to yaya@"%" identified by "123456"; //添加授权用户
+Query OK, 0 rows affected, 1 warning (0.18 sec)
+[root@pxcnode71 ~]# mysql -uroot -p123456 -e  'show grants for yaya@"%" ' //查看
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------------------------------------------+
+| Grants for yaya@%                                |
++--------------------------------------------------+
+| GRANT USAGE ON *.* TO 'yaya'@'%'                 |
+| GRANT ALL PRIVILEGES ON `gamedb`.* TO 'yaya'@'%' |
++--------------------------------------------------+
+[root@pxcnode71 ~]#
+[root@pxcnode73 ~]# mysql -uroot -p123456 -e  'show grants for yaya@"%" ' //查看
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------------------------------------------+
+| Grants for yaya@%                                |
++--------------------------------------------------+
+| GRANT USAGE ON *.* TO 'yaya'@'%'                 |
+| GRANT ALL PRIVILEGES ON `gamedb`.* TO 'yaya'@'%' |
++--------------------------------------------------+
+[root@pxcnode73 ~]#
+2）客户端连接集群存取数据 （连接任意一台数据库服务器的ip地址都可以）
+连接数据服务器主机73
+client50 ~]# mysql -h192.168.4.73 -uyaya -p123456 //连接服务器73
+mysql>
+mysql> create database gamedb; //建库
+Query OK, 1 row affected (0.19 sec)
+mysql>  create table  gamedb.a(id int primary key auto_increment,name char(10));//建表
+Query OK, 0 rows affected (1.02 sec)
+mysql> insert into gamedb.a(name)values("bob"),("tom"); //插入记录
+Query OK, 2 rows affected (0.20 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+3）在另外2台数据库服务器查看数据，客户端连接数据库服务器71主机查看数据。
+client50 ~]# mysql -h192.168.4.71 -uyaya -p123456 //连接服务器71
+mysql> select  * from  gamedb.a; //查看记录
++----+-------+
+| id | name  |
++----+-------+
+|  2 | bob   |
+|  5 | tom   |
+4）客户端连接数据库服务器73主机查看数据
+client50 ~]# mysql -h192.168.4.73 -uyaya -p123456 //连接服务器73
+mysql> select  * from  gamedb.a; //查看记录
++----+-------+
+| id | name  |
++----+-------+
+|  2 | bob   |
+|  5 | tom   |
+
+测试故障自动恢复
+
+停止数据库服务
+停止3台服务器的任意一台主机的数据库服务都不会影响数据的存取。
+[root@pxcnode71 ~]# systemctl  stop  mysql  //停止71主机的数据库服务
+Client50 ~]# client50 ~]# mysql -h192.168.4.72 -uyaya -p123456 //连接服务器72
+mysql> insert into gamedb.a(name)values("bob2"),("tom2");
+mysql> insert into gamedb.a(name)values("jerry"),("jack");
+Query OK, 2 rows affected (0.20 sec)
+Records: 2  Duplicates: 0  Warnings: 0 
+客户端50，连接数据库主机73，查看数据
+client50 ~]# mysql -h192.168.4.73 -uyaya -p123456 //连接服务器73
+mysql> select  * from  gamedb.a;
++----+-------+
+| id | name  |
++----+-------+
+|  2 | bob   |
+|  5 | tom   |
+|  7 | bob2  |
+|  9 | tom2  |
+| 11 | jerry |
+| 13 | jack  |
++----+-------+
+6 rows in set (0.00 sec)
+3）启动71主机的数据库服务
+数据库服务运行后，会自动同步宕机期间的数据。
+client50 ~]# mysql -h192.168.4.71 -uyaya -p123456 //连接服务器71
+mysql> select  * from  gamedb.a;
++----+-------+
+| id | name  |
++----+-------+
+|  2 | bob   |
+|  5 | tom   |
+|  7 | bob2  |
+|  9 | tom2  |
+| 11 | jerry |
+| 13 | jack  |
++----+-------+
+rows in set (0.00 sec)
+
+
+
+配置数据库服务负载均衡集群(81.82作为调度器)
+１．安装haproxy软件
+２．修改配置文件
+３．启动服务
+４．登录管理页面，查看调度信息
+５．测试配置
+[root@proxy2 ~]# yum -y install haproxy 
+[root@proxy2 ~]# vim /etc/haproxy/haproxy.cfg
+#．．．．．．．
+#(把59行以后的数据删除后，添加下列信息)
+listen status
+        mode http
+        bind *:80
+        stats enable
+        stats uri /admin
+        stats auth admin:admin
+        
+　　　　　listen mysql_3306 *:3306
+        mode tcp
+        option tcpka
+        balance roundrobin
+        server mysql_01 192.168.4.71:3306 check
+        server mysql_02 192.168.4.72:3306 check
+        server mysql_03 192.168.4.73:3306 check
+[root@proxy2 ~]# systemctl start haproxy
+[root@proxy2 ~]# systemctl enable haproxy
+
+
+
+
+HA集群（配置调度器的高可用集群，vip地址　192.168.4.250）
+准备用调度服务器
+1．在两台主机上安装keepalived 
+配置第一台代理服务器proxy（192.168.4.81）。
+[root@proxy ~]# yum install -y keepalived
+[root@proxy ~]# vim /etc/keepalived/keepalived.conf
+global_defs {
+  router_id  proxy1                        //设置路由ID号
+  vrrp_iptables                               //不添加任何防火墙规则
+}
+vrrp_instance VI_1 {
+  state MASTER                         //主服务器为MASTER（备服务器需要修改为BACKUP）
+  interface eth0                    //定义网络接口
+  virtual_router_id 51                
+  priority 100                     //服务器优先级,优先级高优先获取VIP（实验需要修改）
+  advert_int 1
+  authentication {
+    auth_type pass
+    auth_pass 1111                       //主备服务器密码必须一致
+  }
+  virtual_ipaddress {                   //谁是主服务器谁获得该VIP（实验需要修改）
+192.168.4.80 
+}    
+}
+[root@proxy ~]# systemctl start keepalived
+
+配置第二台代理服务器proxy（192.168.4.82）。
+[root@proxy2 ~]# yum install -y keepalived
+[root@proxy2 ~]# vim /etc/keepalived/keepalived.conf
+global_defs {
+  router_id  proxy2                        //设置路由ID号
+vrrp_iptables                               //不添加任何防火墙规则
+}
+vrrp_instance VI_1 {
+  state BACKUP                         //主服务器为MASTER（备服务器需要修改为BACKUP）
+  interface eth0                    //定义网络接口
+  virtual_router_id 51                
+  priority 50                         //服务器优先级,优先级高优先获取VIP
+  advert_int 1
+  authentication {
+    auth_type pass
+    auth_pass 1111                       //主备服务器密码必须一致
+  }
+  virtual_ipaddress {                   //谁是主服务器谁获得该VIP
+192.168.4.250
+}    
+}
+[root@proxy2 ~]# systemctl start keepalived
+
+在web33上进行轮询检测
+
+把mysql主从同步结构的数据迁移到pex 集群上
+１．停止22从服务器的slave进程　stop slave;
+2.使用indbbackupex 对22做数据完全备份
+3.把完全备份的文件拷贝到pxc主机做数据恢复
+４．启动mysql数据库服务
+５．查看slave进程的状态
+６．查看数据
+[root@web33 html]# mysql -h192.168.4.82 -uyaya -p123456 -e "select @@hostname"
++------------+
+| @@hostname |
++------------+
+| pxcnode73  |
++------------+
+[root@web33 html]# mysql -h192.168.4.82 -uyaya -p123456 -e "select @@hostname"
++------------+
+| @@hostname |
++------------+
+| pxcnode71  |
++------------+
+[root@web33 html]# mysql -h192.168.4.82 -uyaya -p123456 -e "select @@hostname"
++------------+
+| @@hostname |
++------------+
+| pxcnode72  |
++------------+
+
+
+
+
+
+
 
 
 
