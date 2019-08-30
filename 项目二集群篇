@@ -75,20 +75,23 @@ rpm -q php php-devel php-mysql
 rpm -q php-fpm
 
 
-脚本二：php连接redis集群
+脚本二：使web服务器　php连接redis集群
 所需软件包及文件：rediscluster.php　redis-cluster-4.3.0.tgz
 　
  #!/bin/bash
   tar -xf redis-cluster-4.3.0.tgz 
    cd redis-4.3.0/
-　　./configure --with-php-config=/usr/bin/php-config
 　　phpize
    ./configure --with-php-config=/usr/bin/php-config
   make && make install
   #ls /usr/lib64/php/modules
-  vim /etc/php.ini
+  sed -i '728s/;//'  /etc/php.ini
+  sed -i '728s/\.\//123/'  /etc/php.ini
+  sed -i '730s/;//'  /etc/php.ini
+  sed -i '730s/\_dir//'  /etc/php.ini
+  sed -i '730s/ext/\/usr\/lib64\/php\/modules\//'
   systemctl restart php-fpm
-  php -m | grep -i redis#
+  php -m | grep -i redis
 
 #################################################
 所用机器　
@@ -277,7 +280,7 @@ OK
 [root@centos7 ~]# systemctl enable php-fpm
 
 
-配置ＰＨＰ支持连接redis服务器
+配置ＰＨＰ支持连接redis服务器：
 
 两台web服务器做相同配置
 [root@web44 ~]# tar -xf redis-cluster-4.3.0.tgz
@@ -292,7 +295,9 @@ Zend Extension Api No:   220100525
 [root@web44 redis-4.3.0]# ls /usr/lib64/php/modules/
 curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sqlite.so  phar.so  redis.so  sqlite3.so  zip.so
 [root@web44 redis-4.3.0]# vim /etc/php.ini
-[root@web44 redis-4.3.0]# systemctl restart php-fpm
+　　728 extension_dir = "/usr/lib64/php/modules"
+  　730　extension = "redis.so"
+　　[root@web44 redis-4.3.0]# systemctl restart php-fpm
 [root@web44 redis-4.3.0]# php -m | grep -i redis
 redis
 
