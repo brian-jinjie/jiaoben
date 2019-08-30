@@ -1,0 +1,303 @@
+为什么部署redis集群？
+因为redis分布式内存存储服务，同时能够实现服务的高可用和数据的自动备份，同时支持数据永久存储
+１．加快网站的访问速度：程序员把网站经常被访问的数据，存储到内存服务器
+
+
+redis环境配置脚本一
+#redis环境配置脚本(使用时确保脚本与软件包在同一目录下)
+#所用软件包redis-4.0.8.tar.gz
+
+#! /bin/bash
+ip=$(ifconfig eth0 | awk 'NR==2{print $2}')
+
+yum -y install gcc 
+tar -zxf redis-4.0.8.tar.gz
+cd redis-4.0.8/
+make && make install
+cd utils/
+./install_server.sh
+/etc/init.d/redis_6379 status
+netstat -antup | grep :6379
+/etc/init.d/redis_6379 stop
+sed -i "70s/127.0.0.1/$ip/" /etc/redis/6379.conf
+sed -i "815s/#//"     /etc/redis/6379.conf
+sed -i "823s/#//"    /etc/redis/6379.conf
+sed -i "829s/#//"   /etc/redis/6379.conf
+/etc/init.d/redis_6379 start 
+#redis-cli -h $ip -p 端口号
+
+
+redis环境配置脚本二（）
+
+#redis环境配置脚本(使用时确保脚本与软件包在同一目录下)
+#所需软件包:redis-4.0.8.tar.gz redis-3.2.1.gem
+#! /bin/bash
+yum  -y  install   rubygems
+gem install redis-3.2.1.gem
+mkdir  /root/bin
+tar -zxvf redis-4.0.8.tar.gz
+cd  redis-4.0.8/src/
+cp  redis-trib.rb   /root/bin/
+chmod  +x   /root/bin/redis-trib.rb
+
+
+
+
+Lnmp脚本一
+LNMP部署脚本 (使用时确保脚本与软件包在同一目录下)
+#所需软件包：　nginx-1.12.2.tar.gz　　gcc openssl-devel pcre-devel　
+#! /bin/bash
+tar -xf lnmp_soft.tar.gz 
+cd lnmp_soft/
+yum -y install gcc openssl-devel pcre-devel 　
+useradd -s /sbin/nologin  nginx
+tar -xvf nginx-1.12.2.tar.gz
+cd nginx-1.12.2
+./configure \
+--user=nginx   --group=nginx \
+--with-http_ssl_module   \
+--with-http_stub_status_module
+make && make install
+yum -y install   mariadb   mariadb-server   mariadb-devel  #提供访问msyql服务器功能的软件包，不需要启动mo
+yum -y install   php        php-mysql        php-devel
+yum -y install   php-fpm
+/usr/local/nginx/sbin/nginx
+echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local　
+#设置nginx开机自启
+chmod +x /etc/rc.local
+#systemctl start   mariadb
+#systemctl enable  mariadb
+systemctl start  php-fpm
+systemctl enable php-fpm
+#检查软件包及服务是否启动成功
+netstat -ntulp | grep 80
+rpm -q php php-devel php-mysql
+rpm -q php-fpm
+
+
+脚本二：php连接redis集群
+所需软件包及文件：rediscluster.php　redis-cluster-4.3.0.tgz
+　
+ #!/bin/bash
+  tar -xf redis-cluster-4.3.0.tgz 
+   cd redis-4.3.0/
+　　./configure --with-php-config=/usr/bin/php-config
+　　phpize
+   ./configure --with-php-config=/usr/bin/php-config
+  make && make install
+  #ls /usr/lib64/php/modules
+  vim /etc/php.ini
+  systemctl restart php-fpm
+  php -m | grep -i redis#
+
+#################################################
+所用机器　
+        web服务器　192.168.4.33-44
+        redis集群　192.168.4.51－56,58
+        redis集群　192.168.4.57
+        pxc 192.168.4.71-73
+        LB  192.168.4.81-82
+        
+概况：        
+配置redis集群(使用redis脚本一配置多台redis服务器环境)
+配置redis管理（）
+启动redis集群
+测试redis集群
+配置LNMP网站(使用LNMP脚本一)
+配置ＰＨＰ支持连接redis服务器
+编写php脚本连接集群存取数据
+客户端访问网站脚本存取数据
+
+
+
+详细步骤：
+
+配置redis集群(使用脚本一配置多台redis服务器环境)
+配置redis管理（）
+1）部署ruby脚本运行环境
+[root@mgm57 ~]#yum  -y  install   rubygems 
+[root@mgm57 ~]# which gem
+/usr/bin/gem
+[root@mgm57 ~]# ls  *.gem
+redis-3.2.1.gem
+[root@mgm57 ~]#
+[root@mgm57 ~]# gem install redis-3.2.1.gem
+Successfully installed redis-3.2.1
+Parsing documentation for redis-3.2.1
+Installing ri documentation for redis-3.2.1
+1 gem installed
+[root@mgm57 ~]#
+2）创建管理集群脚本
+[root@mgm57 ~]#mkdir  /root/bin     //创建命令检索目录
+[root@mgm57 ~]#tar -zxvf redis-4.0.8.tar.gz
+[root@mgm57 ~]#cd  redis-4.0.8/src/
+[root@mgm57 ~]#cp  redis-trib.rb   /root/bin/ //创建管理集群脚本
+[root@mgm57 ~]#chmod  +x   /root/bin/redis-trib.rb
+[root@mgm57 ~]#redis-trib.rb   help  //查看命令帮助
+
+
+启动redis集群
+redis-trib.rb create --replicas 1 192.168.4.51:6379 192.168.4.52:6379 192.168.4.53:6379 192.168.4.54:6379 192.168.4.55:6379 192.168.4.56:6379 192.168.4.58:6379
+>>> Creating cluster
+>>> Performing hash slots allocation on 7 nodes...
+Using 3 masters:
+192.168.4.51:6379
+192.168.4.52:6379
+192.168.4.53:6379
+Adding replica 192.168.4.55:6379 to 192.168.4.51:6379
+Adding replica 192.168.4.56:6379 to 192.168.4.52:6379
+Adding replica 192.168.4.58:6379 to 192.168.4.53:6379
+Adding replica 192.168.4.54:6379 to 192.168.4.51:6379
+M: 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c 192.168.4.51:6379
+   slots:0-5460 (5461 slots) master
+M: 5ea5bbcecaa29bc4175638c7083b39f49ec112ef 192.168.4.52:6379
+   slots:5461-10922 (5462 slots) master
+M: 5017bbea03d53bbdb766aa887df44db1bb33cf7b 192.168.4.53:6379
+   slots:10923-16383 (5461 slots) master
+S: 217f499152353d119ae5a3c91c7c77d3fb31f2e1 192.168.4.54:6379
+   replicates 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c
+S: 8b9d7a2c001d43ba978b63adf5bce45b185d0f86 192.168.4.55:6379
+   replicates 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c
+S: 68844b63d28ad838715003c0a2083475f6780c2c 192.168.4.56:6379
+   replicates 5ea5bbcecaa29bc4175638c7083b39f49ec112ef
+S: ef5831b771691e6155bf88f50f7a6dfcc6670cf6 192.168.4.58:6379
+   replicates 5017bbea03d53bbdb766aa887df44db1bb33cf7b
+Can I set the above configuration? (type 'yes' to accept): yes
+>>> Nodes configuration updated
+>>> Assign a different config epoch to each node
+>>> Sending CLUSTER MEET messages to join the cluster
+Waiting for the cluster to join...
+>>> Performing Cluster Check (using node 192.168.4.51:6379)
+M: 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c 192.168.4.51:6379
+   slots:0-5460 (5461 slots) master
+   2 additional replica(s)
+M: 5ea5bbcecaa29bc4175638c7083b39f49ec112ef 192.168.4.52:6379
+   slots:5461-10922 (5462 slots) master
+   1 additional replica(s)
+S: 68844b63d28ad838715003c0a2083475f6780c2c 192.168.4.56:6379
+   slots: (0 slots) slave
+   replicates 5ea5bbcecaa29bc4175638c7083b39f49ec112ef
+S: ef5831b771691e6155bf88f50f7a6dfcc6670cf6 192.168.4.58:6379
+   slots: (0 slots) slave
+   replicates 5017bbea03d53bbdb766aa887df44db1bb33cf7b
+S: 8b9d7a2c001d43ba978b63adf5bce45b185d0f86 192.168.4.55:6379
+   slots: (0 slots) slave
+   replicates 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c
+S: 217f499152353d119ae5a3c91c7c77d3fb31f2e1 192.168.4.54:6379
+   slots: (0 slots) slave
+   replicates 00de5c7dcb658a3a7f59a7cbc109626f1716ab5c
+M: 5017bbea03d53bbdb766aa887df44db1bb33cf7b 192.168.4.53:6379
+   slots:10923-16383 (5461 slots) master
+   1 additional replica(s)
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+
+
+在任意一台redis服务器本机，查看集群信息
+[root@redisA ~]# redis-cli  -h 192.168.4.51 -p 6351
+192.168.4.51:6351> cluster info       //查看集群信息
+cluster_state:ok
+……
+……
+cluster_known_nodes:6
+cluster_size:3
+192.168.4.51:6351> cluster  nodes   //查看集群节点信息
+d9634ba0aa5c1a07193da4a013da6051c1515922 192.168.4.54:6354@16354 slave 9e44139cffb8ebd7ed746aabbf4bcea9bf207645 0 1561357552212 4 connected
+894dd0008053f6fb65e9e4a36b755d9351607500 192.168.4.56:6356@16356 slave 324e05df3f143ef97e50d09be0328a695e655986 0 1561357554216 6 connected
+d9f8fe6d6d9dd391be8e7904501db1535e4d17cb 192.168.4.51:6351@16351 myself,master - 0 1561357545000 1 connected 0-5460
+324e05df3f143ef97e50d09be0328a695e655986 192.168.4.52:6352@16352 master - 0 1561357553214 2 connected 5461-10922
+9e44139cffb8ebd7ed746aabbf4bcea9bf207645 192.168.4.53:6353@16353 master - 0 1561357554216 3 connected 10923-16383
+2d343a9df48f6f6e207949e980ef498466a44dad 192.168.4.55:6355@16355 slave d9f8fe6d6d9dd391be8e7904501db1535e4d17cb 0 1561357553716 5 connected
+192.168.4.51:6351>
+
+
+测试集群
+[root@client50 ~]# redis-cli  -c  -h 192.168.4.51 -p 6351 //连接服务器51
+192.168.4.51:6351>
+192.168.4.51:6351> set x 100  //存储
+-> Redirected to slot [16287] located at 192.168.4.53:6353  //提示存储在53主机
+OK
+192.168.4.53:6353> keys *
+1) "x"
+192.168.4.53:6353>
+192.168.4.53:6353> set y 200
+OK
+192.168.4.53:6353> keys *
+1) "y"
+2) "x"
+192.168.4.53:6353> set z 300 //存储
+-> Redirected to slot [8157] located at 192.168.4.52:6352 //提示存储在52主机
+OK
+192.168.4.52:6352> keys *  //在52主机查看数据 只有变量z 
+1) "z"
+192.168.4.52:6352> get x 
+-> Redirected to slot [16287] located at 192.168.4.53:6353 //连接53主机获取数据
+"100"
+192.168.4.53:6353> keys *
+1) "y"
+2) "x"
+192.168.4.53:6353> get z
+-> Redirected to slot [8157] located at 192.168.4.52:6352
+"300"
+192.168.4.52:6352> set i 400
+-> Redirected to slot [15759] located at 192.168.4.53:6353
+OK
+192.168.4.53:6353> set j 500
+-> Redirected to slot [3564] located at 192.168.4.51:6351
+OK
+192.168.4.51:6351>
+
+配置LNMP　web网站
+ 步骤一：安装部署LNMP软件
+＃未修改nginx的php服务
+备注：mariadb（数据库客户端软件）、mariadb-server（数据库服务器软件）、mariadb-devel（其他客户端软件的依赖包）、php（解释器）、php-fpm（进程管理器服务）、php-mysql（PHP的数据库扩展包）。
+1）安装软件包
+[root@centos7 ~]# yum -y install gcc openssl-devel pcre-devel 
+[root@centos7 ~]# useradd -s /sbin/nologin  nginx
+[root@centos7 ~]# tar -xvf nginx-1.12.2.tar.gz
+[root@centos7 ~]# cd nginx-1.12.2
+[root@centos7 nginx-1.12.2]# ./configure   \
+--user=nginx   --group=nginx \
+--with-http_ssl_module   \
+--with-http_stub_status_module
+[root@centos7 nginx-1.12.2]# make && make install
+[root@centos7 ~]# yum -y install   mariadb   mariadb-server   mariadb-devel
+[root@centos7 ~]# yum -y install   php        php-mysql        php-fpm
+2)启动服务(nginx、mariadb、php-fpm)
+[root@centos7 ~]# /usr/local/nginx/sbin/nginx                 #启动Nginx服务
+[root@centos7 ~]# echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local
+[root@centos7 ~]# chmod +x /etc/rc.local
+[root@centos7 ~]# ss -utnlp | grep :80                        #查看端口信息
+[root@centos7 ~]# #systemctl start   mariadb                   #启动mariadb服务器
+[root@centos7 ~]# #systemctl enable  mariadb               
+    
+[root@centos7 ~]# systemctl start  php-fpm                   #启动php-fpm服务
+[root@centos7 ~]# systemctl enable php-fpm
+
+
+配置ＰＨＰ支持连接redis服务器
+
+
+[root@web44 ~]# tar -xf redis-cluster-4.3.0.tgz
+[root@web44 ~]# cd redis-4.3.0/
+[root@web44 redis-4.3.0]# phpize
+Configuring for:
+PHP Api Version:         20100412
+Zend Module Api No:      20100525
+Zend Extension Api No:   220100525
+[root@web44 redis-4.3.0]# ./configure --with-php-config=/usr/bin/php-config
+[root@web44 redis-4.3.0]#　make && make install
+[root@web44 redis-4.3.0]# ls /usr/lib64/php/modules/
+curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sqlite.so  phar.so  redis.so  sqlite3.so  zip.so
+[root@web44 redis-4.3.0]# vim /etc/php.ini
+[root@web44 redis-4.3.0]# systemctl restart php-fpm
+[root@web44 redis-4.3.0]# php -m | grep -i redis
+redis
+
+
+
+
+
+
