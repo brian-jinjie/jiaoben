@@ -1018,7 +1018,7 @@ Hostname=web33
 
 监控配置
 步骤一：创建主动模式监控模板
-1）克隆监控模板，新模板名称为：Template OS Linux ServerActive。
+1）克隆监控模板( Template OS Linux)，新模板名称为：Template OS Linux ServerActive。
 2）修改模板中的监控项目的监控模式为主动模式
 禁用不支持主动模式的监控项目
 
