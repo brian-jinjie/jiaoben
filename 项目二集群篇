@@ -2,6 +2,20 @@
 因为redis分布式内存存储服务，同时能够实现服务的高可用和数据的自动备份，同时支持数据永久存储
 １．加快网站的访问速度：程序员把网站经常被访问的数据，存储到内存服务器
 
+概况：        
+1.配置redis集群(使用redis脚本一,配置多台redis服务器环境)
+2.配置redis管理器（redis环境配置脚本二）
+3.启动redis集群
+4.测试redis集群
+5.配置LNMP网站(使用LNMP脚本一)
+6.配置php支持连接redis服务器(LNMP脚本二)
+7.编写php脚本连接集群存取数据
+8.客户端访问网站脚本存取数据
+9.配置pex集群
+10.配置LB集群
+11.配置haproxy调度器集群（keepalived）
+
+
 
 redis环境配置脚本一
 #redis环境配置脚本(使用时确保脚本与软件包在同一目录下)
@@ -27,7 +41,7 @@ sed -i "829s/#//"   /etc/redis/6379.conf
 #redis-cli -h $ip -p 端口号
 
 
-redis环境配置脚本二（）
+redis环境配置脚本二
 
 #redis环境配置脚本(使用时确保脚本与软件包在同一目录下)
 #所需软件包:redis-4.0.8.tar.gz redis-3.2.1.gem
@@ -75,10 +89,9 @@ rpm -q php php-devel php-mysql
 rpm -q php-fpm
 
 
-脚本二：使web服务器　php连接redis集群
+LNMP脚本二：使web服务器　php连接redis集群
 所需软件包及文件：rediscluster.php　redis-cluster-4.3.0.tgz
-　
- #!/bin/bash
+　#!/bin/bash
   tar -xf redis-cluster-4.3.0.tgz 
    cd redis-4.3.0/
 　　phpize
@@ -101,18 +114,6 @@ rpm -q php-fpm
         pxc 192.168.4.71-73
         LB  192.168.4.81-82
         
-概况：        
-配置redis集群(使用redis脚本一,配置多台redis服务器环境)
-配置redis管理（）
-启动redis集群
-测试redis集群
-配置LNMP网站(使用LNMP脚本一)
-配置ＰＨＰ支持连接redis服务器
-编写php脚本连接集群存取数据
-客户端访问网站脚本存取数据
-配置pex集群
-配置LB集群
-配置haproxy调度器集群（keepalived）
 
 
 
@@ -309,6 +310,7 @@ curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sq
 　　[root@web44 redis-4.3.0]# systemctl restart php-fpm
 [root@web44 redis-4.3.0]# php -m | grep -i redis
 redis
+
 
 步骤六：
 配置pxc集群三台数据库（71，72，73）
